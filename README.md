@@ -4,6 +4,8 @@ A Unity Editor tool that fetches real Yeeps room data and loads it into unity, r
 
 ## Install
 
+**Requires Unity 6000.1.17f1** (matches the real game's engine version — install this exact version via Unity Hub, other versions aren't tested).
+
 1. Get an AssetRipper export of Yeeps. Inside it you'll have a folder like `ExportedProject`.
 2. Download the **`YeepsMapLoaderSetup`** folder from this repo and put it **next to** `ExportedProject`, not inside it:
    ```
