@@ -1,4 +1,4 @@
-# Yeeps Map Loader
+# Yeeps Map Loader -- BETA!
 
 A Unity Editor tool that fetches real Yeeps room data and loads it into unity, ready to export as an FBX for Blender. (you can update the **`YeepsMapLoaderData`** with fixes if you see any)
 
