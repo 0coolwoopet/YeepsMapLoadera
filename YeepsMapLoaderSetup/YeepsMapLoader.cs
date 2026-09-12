@@ -23,14 +23,20 @@ public partial class YeepsMapLoader : EditorWindow
     string mobileCode = "";
 
     bool   isCommunityWorld = true;
+    bool   isOfficialWorld  = false;
     string worldName        = "";
     string accountID        = "";
     string manualRoomKey    = "";
     RoomNode[] browsedRooms = null;
     Vector2 browseScroll;
+    int    officialCategoryIndex = 0;
 
     string BuildRoomKey()
     {
+        if (isOfficialWorld)
+            return OFFICIAL_ROOMS.Length > 0 && OFFICIAL_ROOMS[officialCategoryIndex].rooms.Length > 0
+                ? OFFICIAL_ROOMS[officialCategoryIndex].rooms[0].key
+                : "nexus";
         string acc = accountID ?? "";
         string prefix = isCommunityWorld
             ? "c_" + (worldName ?? "").ToUpperInvariant()
@@ -624,11 +630,21 @@ public partial class YeepsMapLoader : EditorWindow
         GUILayout.Space(10);
         GUILayout.Label("── Type ──", EditorStyles.miniLabel);
         GUILayout.BeginHorizontal();
-        if (GUILayout.Toggle(isCommunityWorld, "Community World?"))  isCommunityWorld = true;
-        if (GUILayout.Toggle(!isCommunityWorld, "Private World?"))   isCommunityWorld = false;
+        if (GUILayout.Toggle(isCommunityWorld && !isOfficialWorld, "Community World?"))
+        { isCommunityWorld = true; isOfficialWorld = false; }
+        if (GUILayout.Toggle(!isCommunityWorld && !isOfficialWorld, "Private World?"))
+        { isCommunityWorld = false; isOfficialWorld = false; }
+        if (GUILayout.Toggle(isOfficialWorld, "Official?"))
+        { isOfficialWorld = true; }
         GUILayout.EndHorizontal();
 
-        if (isCommunityWorld)
+        if (isOfficialWorld)
+        {
+            string[] categoryNames = new string[OFFICIAL_ROOMS.Length];
+            for (int i = 0; i < OFFICIAL_ROOMS.Length; i++) categoryNames[i] = OFFICIAL_ROOMS[i].category;
+            officialCategoryIndex = EditorGUILayout.Popup("Category", officialCategoryIndex, categoryNames);
+        }
+        else if (isCommunityWorld)
             worldName = EditorGUILayout.TextField("World Name", worldName);
 
         GUILayout.Space(10);
@@ -637,7 +653,14 @@ public partial class YeepsMapLoader : EditorWindow
 
         GUILayout.Space(10);
         GUILayout.Label("── Map ──", EditorStyles.miniLabel);
-        if (GUILayout.Button("Browse Rooms", GUILayout.Height(28))) BrowseRooms();
+        if (isOfficialWorld)
+        {
+            if (GUILayout.Button("Show Category Rooms", GUILayout.Height(28))) ShowOfficialCategory();
+        }
+        else
+        {
+            if (GUILayout.Button("Browse Rooms", GUILayout.Height(28))) BrowseRooms();
+        }
 
         if (browsedRooms != null && browsedRooms.Length > 0)
         {
@@ -739,6 +762,20 @@ public partial class YeepsMapLoader : EditorWindow
         }
     }
 
+    void ShowOfficialCategory()
+    {
+        if (officialCategoryIndex < 0 || officialCategoryIndex >= OFFICIAL_ROOMS.Length)
+        { status = "No category selected."; return; }
+
+        var (category, rooms) = OFFICIAL_ROOMS[officialCategoryIndex];
+        var list = new List<RoomNode>(rooms.Length);
+        foreach (var (key, label) in rooms)
+            list.Add(new RoomNode { roomKey = key, roomName = label });
+
+        browsedRooms = list.ToArray();
+        status = $"Showing {browsedRooms.Length} room(s) in '{category}'.";
+    }
+
     void FetchRoom()
     {
         if (string.IsNullOrEmpty(mobileCode)) { status = "Enter your mobile code first."; return; }
@@ -752,6 +789,11 @@ public partial class YeepsMapLoader : EditorWindow
 
         try
         {
+            if (isOfficialWorld)
+            {
+                FetchRoomByKey(BuildRoomKey());
+                return;
+            }
             if (isCommunityWorld && string.IsNullOrEmpty(worldName)) { status = "Enter a World Name first."; return; }
             if (!isCommunityWorld)
             {
