@@ -836,9 +836,9 @@ public partial class YeepsMapLoader : EditorWindow
             if (resp == null || !resp.ok)
                 throw new System.Exception(!string.IsNullOrEmpty(resp?.error) ? resp.error : ("Unexpected response: " + respText));
 
-            if (resp.blocks == null || resp.blocks.Length == 0)
+            if (resp.dimensions == null || resp.dimensions.Length != 3)
             {
-                status = $"'{roomKey}' returned 0 blocks -- wrong room key?";
+                status = $"'{roomKey}' has no valid dimensions -- not loading (invalid room?).";
                 Debug.LogWarning("[YeepsMapLoader] " + status);
                 return;
             }
@@ -853,12 +853,11 @@ public partial class YeepsMapLoader : EditorWindow
 
             WriteBlocksCsv(blocks.ToArray(), csvPath);
 
-            if (resp.dimensions != null && resp.dimensions.Length == 3)
-                File.WriteAllText(roomInfoPath, $"{{\"dimensions\":[{resp.dimensions[0]},{resp.dimensions[1]},{resp.dimensions[2]}]}}");
-            else if (File.Exists(roomInfoPath))
-                File.Delete(roomInfoPath);
+            File.WriteAllText(roomInfoPath, $"{{\"dimensions\":[{resp.dimensions[0]},{resp.dimensions[1]},{resp.dimensions[2]}]}}");
 
-            status = $"Fetched '{roomKey}' ({blocks.Count} blocks).";
+            status = blocks.Count > 0
+                ? $"Fetched '{roomKey}' ({blocks.Count} blocks)."
+                : $"Fetched '{roomKey}' (0 blocks -- room is empty).";
             Debug.Log("[YeepsMapLoader] " + status);
             LoadMap();
         }

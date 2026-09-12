@@ -1574,8 +1574,6 @@ public partial class YeepsMapLoader
     {
         ("Hub", new[] {
             ("nexus", "nexus"),
-            ("nexus_worlds", "nexus_worlds"),
-            ("public", "public"),
             ("ch2_hub", "ch2_hub"),
         }),
         ("Official (numbered)", new[] {
