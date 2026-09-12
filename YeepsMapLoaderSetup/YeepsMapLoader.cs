@@ -837,16 +837,6 @@ public partial class YeepsMapLoader : EditorWindow
             if (resp == null || !resp.ok)
                 throw new System.Exception(!string.IsNullOrEmpty(resp?.error) ? resp.error : ("Unexpected response: " + respText));
 
-            bool isSandboxWorld = System.Text.RegularExpressions.Regex.IsMatch(
-                roomKey, @"^(c_[A-Za-z0-9]+|p_o_[A-Za-z0-9]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-
-            if (!isSandboxWorld && (resp.dimensions == null || resp.dimensions.Length != 3))
-            {
-                status = $"'{roomKey}' has no valid dimensions -- not loading (invalid room?).";
-                Debug.LogWarning("[YeepsMapLoader] " + status);
-                return;
-            }
-
             var blocks = new List<MapBlock>(resp.blocks?.Length ?? 0);
             if (resp.blocks != null)
                 foreach (var b in resp.blocks)
@@ -855,6 +845,13 @@ public partial class YeepsMapLoader : EditorWindow
                         fwd = b.fwd, up = b.up, color = b.color, owner = b.owner,
                     });
 
+            if (blocks.Count == 0)
+            {
+                status = $"'{roomKey}' returned 0 blocks -- not loading.";
+                Debug.LogWarning("[YeepsMapLoader] " + status);
+                return;
+            }
+
             WriteBlocksCsv(blocks.ToArray(), csvPath);
 
             if (resp.dimensions != null && resp.dimensions.Length == 3)
@@ -862,9 +859,7 @@ public partial class YeepsMapLoader : EditorWindow
             else if (File.Exists(roomInfoPath))
                 File.Delete(roomInfoPath);
 
-            status = blocks.Count > 0
-                ? $"Fetched '{roomKey}' ({blocks.Count} blocks)."
-                : $"Fetched '{roomKey}' (0 blocks -- room is empty).";
+            status = $"Fetched '{roomKey}' ({blocks.Count} blocks).";
             Debug.Log("[YeepsMapLoader] " + status);
             LoadMap();
         }
