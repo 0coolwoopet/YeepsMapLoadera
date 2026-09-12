@@ -144,6 +144,7 @@ public partial class YeepsMapLoader : EditorWindow
     {
         ("1x1x2_barbedWire", 0f, -0.5f, 0.5f),
         ("1x1x4_barbedWire", 0f, -1.5f, 1.5f),
+        ("techWeb_", 0f, 0f, -2f),
     };
 
     static readonly System.Text.RegularExpressions.Regex EMBEDDED_DIMS =
@@ -836,7 +837,10 @@ public partial class YeepsMapLoader : EditorWindow
             if (resp == null || !resp.ok)
                 throw new System.Exception(!string.IsNullOrEmpty(resp?.error) ? resp.error : ("Unexpected response: " + respText));
 
-            if (resp.dimensions == null || resp.dimensions.Length != 3)
+            bool isSandboxWorld = System.Text.RegularExpressions.Regex.IsMatch(
+                roomKey, @"^(c_[A-Za-z0-9]+|p_o_[A-Za-z0-9]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            if (!isSandboxWorld && (resp.dimensions == null || resp.dimensions.Length != 3))
             {
                 status = $"'{roomKey}' has no valid dimensions -- not loading (invalid room?).";
                 Debug.LogWarning("[YeepsMapLoader] " + status);
@@ -853,7 +857,10 @@ public partial class YeepsMapLoader : EditorWindow
 
             WriteBlocksCsv(blocks.ToArray(), csvPath);
 
-            File.WriteAllText(roomInfoPath, $"{{\"dimensions\":[{resp.dimensions[0]},{resp.dimensions[1]},{resp.dimensions[2]}]}}");
+            if (resp.dimensions != null && resp.dimensions.Length == 3)
+                File.WriteAllText(roomInfoPath, $"{{\"dimensions\":[{resp.dimensions[0]},{resp.dimensions[1]},{resp.dimensions[2]}]}}");
+            else if (File.Exists(roomInfoPath))
+                File.Delete(roomInfoPath);
 
             status = blocks.Count > 0
                 ? $"Fetched '{roomKey}' ({blocks.Count} blocks)."
@@ -1004,8 +1011,10 @@ public partial class YeepsMapLoader : EditorWindow
 
         foreach (var (name, x, y, z, csx, csy, csz, fwd, up, colorName, ownerName) in blocks)
         {
+            string prefabLookupName = name.StartsWith("techWeb_") ? "techWeb" : name;
+
             string prefabPath;
-            if (!index.TryGetValue(name, out prefabPath))
+            if (!index.TryGetValue(prefabLookupName, out prefabPath))
             {
                 missing[name] = missing.ContainsKey(name) ? missing[name] + 1 : 1;
                 continue;
