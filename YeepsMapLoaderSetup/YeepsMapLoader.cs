@@ -1072,7 +1072,12 @@ public partial class YeepsMapLoader : EditorWindow
 
             Vector3 posNudge = Vector3.zero;
             foreach (var (m, dx, dy, dz) in POSITION_NUDGE_CELLS)
-                if (name.Contains(m)) { posNudge = new Vector3(dx, dy, dz) * scale; break; }
+                if (name.Contains(m))
+                {
+                    Vector3 raw = new Vector3(dx, dy, dz) * scale;
+                    posNudge = m == "techWeb_" ? rot * raw : raw;
+                    break;
+                }
 
             pivot.transform.localPosition =
                 new Vector3(x * scale, y * scale, z * scale) + offset
